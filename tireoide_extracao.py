@@ -18,10 +18,10 @@ def load_images(directory):
                 names.append(file)
     return images, names
 
-def visualize_images(images_list):
-    for image in images_list:
+def visualize_images(img_list):
+    for image in img_list:
         plt.imshow(image, cmap = "gray")
-        plt.show()        
+        plt.show()              
 
 def main(bmt, graves):
 
@@ -46,38 +46,41 @@ def main(bmt, graves):
 
     # VISUALIZE ORIGINAL IMAGES
     print('BMT dataset: raw images.\n')
-    #visualize_images(bmt_images)
+    visualize_images(bmt_images)
     print('Graves dataset: raw images.\n')    
-    #visualize_images(graves_images)
+    visualize_images(graves_images)
 
-    # ROI TESTS
-    #for image in bmt_images:
-    #    roi = cv2.selectROI('Selecione área de interesse',image,showCrosshair = True,fromCenter = False)
-    #    print(roi)
-    #    roi_cropped = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
-    #    cropped_bmt_images.append(roi_cropped)
+    # CROP BMT IMAGES
+    cropped_bmt_images.append(bmt_images[0][50:87, 46:85])
+    cropped_bmt_images.append(bmt_images[1][58:94, 40:83])
+    cropped_bmt_images.append(bmt_images[2][48:82, 46:82])
+    cropped_bmt_images.append(bmt_images[3][38:63, 53:83])
+    cropped_bmt_images.append(bmt_images[4][60:89, 48:85])
+    cropped_bmt_images.append(bmt_images[5][46:84, 46:84])
 
-    #for image in graves_images:
-    #    roi = cv2.selectROI('Selecione área de interesse',image,showCrosshair = True,fromCenter = False)
-    #    print(roi)
-    #    roi_cropped = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
-    #    cropped_graves_images.append(roi_cropped)
+    # CROP GRAVES IMAGES
+    cropped_graves_images.append(graves_images[0][41:76, 49:82])
+    cropped_graves_images.append(graves_images[1][43:78, 48:83])
+    cropped_graves_images.append(graves_images[2][39:73, 42:75])
+    cropped_graves_images.append(graves_images[3][43:77, 47:83])
+    cropped_graves_images.append(graves_images[4][48:83, 43:79])
+    cropped_graves_images.append(graves_images[5][49:85, 47:78])
 
     # VISUALIZE CROPPED IMAGES
-    #print('BMT dataset: cropped images.\n')
-    #visualize_images(bmt_images)
-    #print('Graves dataset: cropped images.\n')    
-    #visualize_images(graves_images)
+    print('BMT dataset: cropped images.\n')
+    visualize_images(cropped_bmt_images)
+    print('Graves dataset: cropped images.\n')    
+    visualize_images(cropped_graves_images)
 
     # FILTER TESTS
-    for image in bmt_images:
+    for image in cropped_bmt_images:
     #for image in adjusted_bmt_images:
         #aux_img = cv2.blur(image,(3,3))            # apply the average filter via open CV's "blur" function, with 3 x 3 kernel
         #aux_img = cv2.medianBlur(image,3)          # apply the median filter via open CV's "medianBlur" function, with kernel 3
         aux_img = cv2.GaussianBlur(image,(5,5),0)   # apply the gaussian filter via open CV's "GaussianBlur" function, with 5 x 5 kernel
         filtered_bmt_images.append(aux_img)
 
-    for image in graves_images:
+    for image in cropped_graves_images:
     #for image in adjusted_graves_images:
         #aux_img = cv2.blur(image,(3,3))            # apply the average filter via open CV's "blur" function, with 3 x 3 kernel
         #aux_img = cv2.medianBlur(image,3)          # apply the median filter via open CV's "medianBlur" function, with kernel 3
@@ -126,7 +129,6 @@ def main(bmt, graves):
     visualize_images(top_hat_bmt_images)
     print('Graves dataset: top ha images.\n')    
     visualize_images(top_hat_graves_images)
-
 
     # BINARIZATION TESTS
     for image in adjusted_bmt_images:
