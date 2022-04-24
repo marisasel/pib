@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
+from sklearn.datasets import load_svmlight_file
+
 from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -75,34 +77,40 @@ def print_images(images, y, wrong):
     plt.show()
 
 
-def main(dataset_path):
+#def main(dataset_path):
+def main(data):
+
     # Load the dicom images
-    bmt = load_dataset(os.path.join(dataset_path, "BMT"))
-    graves = load_dataset(os.path.join(dataset_path, "GRAVES"))
+    #bmt = load_dataset(os.path.join(dataset_path, "BMT"))
+    #graves = load_dataset(os.path.join(dataset_path, "GRAVES"))
 
     # Concatenate dataset
-    X = bmt + graves
+    #X = bmt + graves
 
     # Preprocess data
-    X = preprocess(X)
-    images = X.copy()
-    X = X.flatten().reshape(X.shape[0], X.shape[1]*X.shape[2])
+    #X = preprocess(X)
+    #images = X.copy()
+    #X = X.flatten().reshape(X.shape[0], X.shape[1]*X.shape[2])
 
     # Create labels 
-    y = []
-    for i in range(0, len(bmt)):
-        y.append('bmt')
-    for i in range(0, len(graves)):
-        y.append('graves')
-    y = np.array(y)
+    #y = []
+    #for i in range(0, len(bmt)):
+    #    y.append('bmt')
+    #for i in range(0, len(graves)):
+    #    y.append('graves')
+    #y = np.array(y)
+    
+    # Loads data
+    print ("Loading data...")
+    X, y = load_svmlight_file(data)
 
     # Select Model
     model = GradientBoostingClassifier(n_estimators=10, learning_rate=1, max_depth=1, random_state=0)
 
     # Apply PCA for dimensionality reduction
-    pca = PCA()
-    pca.fit(X)
-    X = pca.transform(X)
+    #pca = PCA()
+    #pca.fit(X)
+    #X = pca.transform(X)
    
     
     # Train and predict using Leave One Out
@@ -132,11 +140,17 @@ def main(dataset_path):
             wrong_predicted.append(test_index)
     
     print("acertos:", acertos, "-", acertos/12*100, "%")
-    print_images(images, y, wrong_predicted)
+    #print_images(images, y, wrong_predicted)
         
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("Use: $ python3 tireoide.py dataset_path/")
+#if __name__ == "__main__":
+#    if len(sys.argv) != 2:
+#        sys.exit("Use: $ python3 tireoide.py dataset_path/")
 
-    main(sys.argv[1])
+#    main(sys.argv[1])
+
+if __name__ == "__main__":
+        if len(sys.argv) != 2:
+                sys.exit("Use: $ python3 tireoide.py <data>")
+
+        main(sys.argv[1])
