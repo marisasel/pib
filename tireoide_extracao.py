@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import cv2
 from skimage.feature import local_binary_pattern
 import numpy as np
+from sklearn.decomposition import PCA
 
 def load_images(directory):
     images = []
@@ -23,6 +24,20 @@ def visualize_images(img_list):
     for image in img_list:
         plt.imshow(image, cmap = "gray")
         plt.show()
+
+def pre_process(dataset):
+# Applying filters and extracting pixels 
+    dataset_numpy = []
+    for sample in dataset:
+        #img = sample.pixel_array
+        # Blur to remove noise
+        img_filtered = cv2.blur(sample,(3,3)) 
+        # Increase constrast
+        img_filtered = cv2.convertScaleAbs(img_filtered, alpha=1.5, beta=0)
+        # Erosion to better segmentation
+        img_filtered = cv2.erode(img_filtered, (3,3))
+        dataset_numpy.append(img_filtered)
+    return np.array(dataset_numpy)
 
 def crop_bmt(img_list):
     cropped_bmt = []
@@ -178,12 +193,14 @@ def count_objetcs(img_list):
         num_obj.append(num)   
     return num_obj
 
-def concatenate_features(hu, top_hat_hu, lbp, hist_binary, ct, num_obj, num_obj_eroded):
+def concatenate_features(complete, hu, top_hat_hu, lbp, hist_binary, ct, num_obj, num_obj_eroded):
     features = []
     dataset_size = len(hu)
     i = 0
     while i < dataset_size:
         img_features = []
+        for element in complete[i]:
+            img_features.append(element)        
         for element in hu[i]:
             img_features.append(element)
         for element in top_hat_hu[i]:
@@ -205,9 +222,12 @@ def generate_svm_file(bmt_features, graves_features, file):
     dataset_bmt_size = len(bmt_features)
     i = 0
     while i < dataset_bmt_size:
-        file.write(str("0") + " " + str(i) + " ")
+        file.write(str("0") + " ")
+        k = 0
         for feature in bmt_features[i]:
-            file.write(str(bmt_features[i].index(feature)) + ":" + str(feature) + " ")
+            file.write(str(k) + ":" + str(feature) + " ")
+            k += 1
+            #file.write(str(bmt_features[i].index(feature)) + ":" + str(feature) + " ")
         file.write("\n")
         i += 1
 
@@ -215,9 +235,12 @@ def generate_svm_file(bmt_features, graves_features, file):
     dataset_graves_size = len(graves_features)
     j = 0
     while j < dataset_graves_size:
-        file.write(str("1") + " " + str(j) + " ")
+        file.write(str("1") + " ")
+        k = 0
         for feature in graves_features[j]:
-            file.write(str(graves_features[j].index(feature)) + ":" + str(feature) + " ")
+            file.write(str(k) + ":" + str(feature) + " ")
+            k += 1
+            #file.write(str(graves_features[j].index(feature)) + ":" + str(feature) + " ")
         file.write("\n")
         j += 1
         
@@ -229,6 +252,20 @@ def main(bmt, graves):
     print ('Loading images...')
     bmt_images, bmt_names = load_images(bmt)
     graves_images, graves_names  = load_images(graves)
+
+    # PRE-PROCESS RAW IMAGES
+    bmt_complete = pre_process(bmt_images)
+    graves_complete = pre_process(graves_images)
+    bmt_complete = bmt_complete.flatten().reshape(bmt_complete.shape[0], bmt_complete.shape[1] * bmt_complete.shape[2])
+    graves_complete = graves_complete.flatten().reshape(graves_complete.shape[0], graves_complete.shape[1] * graves_complete.shape[2])
+
+
+    # APPLY PCA FOR DIMENSIONALITY REDUCTION
+    pca = PCA()
+    pca.fit(bmt_complete)
+    bmt_complete = pca.transform(bmt_complete)
+    pca.fit(graves_complete)
+    graves_complete = pca.transform(graves_complete)
 
     # CROP IMAGES
     print ('Cropping images...')
@@ -283,14 +320,18 @@ def main(bmt, graves):
     num_obj_bmt_eroded = count_objetcs(eroded_bmt_images)
     num_obj_graves_eroded = count_objetcs(eroded_graves_images)
 
-    bmt_features = concatenate_features(bmt_hu_descriptors, top_hat_bmt_hu_descriptors, lbp_bmt_descriptors, hist_binary_bmt_images, ct_bmt, num_obj_bmt, num_obj_bmt_eroded)
-    graves_features = concatenate_features(graves_hu_descriptors, top_hat_graves_hu_descriptors, lbp_graves_descriptors, hist_binary_graves_images, ct_graves, num_obj_graves, num_obj_graves_eroded)
+    bmt_features = concatenate_features(bmt_complete, bmt_hu_descriptors, top_hat_bmt_hu_descriptors, lbp_bmt_descriptors, hist_binary_bmt_images, ct_bmt, num_obj_bmt, num_obj_bmt_eroded)
+    graves_features = concatenate_features(bmt_complete, graves_hu_descriptors, top_hat_graves_hu_descriptors, lbp_graves_descriptors, hist_binary_graves_images, ct_graves, num_obj_graves, num_obj_graves_eroded)
 
     fout = open("features.txt","w")
     generate_svm_file(bmt_features, graves_features, fout)
     fout.close
     print ('Done. Take a look into features.txt')
 
+    print('BMT images order: \n')
+    print(bmt_names)
+    print('Graves images order: \n')
+    print(graves_names)
 
     #print('\nBMT features:\n')
     #print(bmt_features)

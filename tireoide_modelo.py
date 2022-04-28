@@ -3,140 +3,104 @@ import sys
 import pydicom
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 
-from sklearn import svm
-from sklearn.neighbors import KNeighborsClassifier
-
+from sklearn.datasets import load_svmlight_file
 from sklearn.model_selection import LeaveOneOut
-from sklearn.decomposition import PCA
-from sklearn import tree
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 
 
 def load_dataset(path):
     dataset = []
-	
     for (root, directories, files) in os.walk(path):
         for file in files:
             dcm_path = os.path.join(root, file)
-            dataset.append(pydicom.dcmread(dcm_path))          
-
-    return dataset
-
-# não finalizado
-# def plot_dataset(dataset):
-#     for image in dataset:
-#         plt.imshow(dataset[0].pixel_array)
-#         plt.show()
-
-def preprocess(dataset):
-# Applying filters and extracting pixels 
-
-    dataset_numpy = []
-
-    for sample in dataset:
-        img = sample.pixel_array
-
-        # Blur to remove noise
-        img_filtered = cv2.blur(img,(3,3)) 
-
-        # Increase constrast
-        img_filtered = cv2.convertScaleAbs(img_filtered, alpha=1.5, beta=0)
-
-        # Erosion to better segmentation
-        img_filtered = cv2.erode(img_filtered, (3,3))
-
-        dataset_numpy.append(img_filtered)
-
-    return np.array(dataset_numpy)
+            dicom = pydicom.dcmread(dcm_path)
+            dataset.append(dicom.pixel_array)
+    return np.array(dataset)                  
 
 def print_images(images, y, wrong):
     # create figure
-    fig = plt.figure()
-    
+    fig = plt.figure()    
     # setting values to rows and column variables
     rows = 3
     columns = 4
-
     for i in range(0, images.shape[0]):
         fig.add_subplot(rows, columns, i+1)
         # showing image
         plt.imshow(images[i])
         plt.axis('off')
-
-        if i in wrong:
-            title = y[i] +" - Wrong"
+        if y[i] == 0:
+            label = 'BMT'
         else:
-            title = y[i] + " - Right"
-
-        plt.title(title)
-    
+            label = 'Graves'
+        if i in wrong:
+            title = label +" - Wrong"
+        else:
+            title = label + " - Right"
+        plt.title(title)    
     plt.show()
 
+def calculate_scores(y_test, y_pred):
+    cm = confusion_matrix(y_test, y_pred)
+    print("Confusion matrix:")
+    print(cm)
+    print(classification_report(y_test, y_pred, labels=[0,1]))
 
-def main(dataset_path):
-    # Load the dicom images
+def main(dataset_path, features_file):
+    
+    # Load the Dicom images for visualization
+    print("Loading images...")
     bmt = load_dataset(os.path.join(dataset_path, "BMT"))
     graves = load_dataset(os.path.join(dataset_path, "GRAVES"))
+    images = np.concatenate((bmt, graves), axis = 0)
 
-    # Concatenate dataset
-    X = bmt + graves
-
-    # Preprocess data
-    X = preprocess(X)
-    images = X.copy()
-    X = X.flatten().reshape(X.shape[0], X.shape[1]*X.shape[2])
-
-    # Create labels 
-    y = []
-    for i in range(0, len(bmt)):
-        y.append('bmt')
-    for i in range(0, len(graves)):
-        y.append('graves')
-    y = np.array(y)
+    # Load data
+    print("Loading data features...")
+    X, y = load_svmlight_file(features_file)
+    X = X.toarray()
+    y = y.astype(int)
 
     # Select Model
     model = GradientBoostingClassifier(n_estimators=10, learning_rate=1, max_depth=1, random_state=0)
-
-    # Apply PCA for dimensionality reduction
-    pca = PCA()
-    pca.fit(X)
-    X = pca.transform(X)
-   
-    
+      
     # Train and predict using Leave One Out
+    print("Training and predicting using Leave One Out models...")
     loo = LeaveOneOut()
-    acertos = 0
+    scores = 0
     wrong_predicted = []
+    y_pred = []
     for train_index, test_index in loo.split(X):
-
         X_test = X[test_index]
         y_test = y[test_index]
-
         X_train = []
         y_train = []
-
         for index in train_index:
             X_train.append(X[index])
-            y_train.append(y[index])
-        
+            y_train.append(y[index])   
         X_train = np.array(X_train)
         y_train = np.array(y_train)
-        
         model.fit(X_train, y_train)
-
+        y_pred.append(model.predict(X_test))
         if model.predict(X_test) == y_test:
-            acertos += 1
+            scores += 1
         else:
             wrong_predicted.append(test_index)
     
-    print("acertos:", acertos, "-", acertos/12*100, "%")
+    print("Scores:", scores, "- Accuracy:", scores/12)
+    calculate_scores(y, y_pred)
     print_images(images, y, wrong_predicted)
-        
 
+	# gera visualização gráfica da matriz de confusão
+	#cm = pd.DataFrame(cm, range(10), range(10))
+	#plt.figure(figsize = (13.33,9.33))  
+	#sn.set(font_scale = 1.0)
+	#sn.heatmap(cm, annot = True, annot_kws = {"size": 10}, fmt = "d") 
+	#plt.show() 
+    
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("Use: $ python3 tireoide.py dataset_path/")
+    if len(sys.argv) != 3:
+        sys.exit("Use: $ python3 tireoide.py dataset_path/ <pre_extracted_features_file>")
 
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
