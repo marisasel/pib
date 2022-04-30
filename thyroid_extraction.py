@@ -212,12 +212,12 @@ def generate_svm_file(bmt_features, graves_features, file):
         j += 1        
     return
 
-def main(bmt, graves):
+def main(path):
     
     # LOAD BASES
     print ('Loading images...')
-    bmt_images, bmt_names = load_images(bmt)
-    graves_images, graves_names  = load_images(graves)
+    bmt_images, bmt_names = load_images(os.path.join(path, "BMT"))
+    graves_images, graves_names  = load_images(os.path.join(path, "GRAVES"))
 
     # PRE-PROCESS RAW IMAGES
     bmt_complete = pre_process(bmt_images)
@@ -298,7 +298,7 @@ def main(bmt, graves):
     print(graves_names)
     
 if __name__ == "__main__":
-	if len(sys.argv) != 3:
-		sys.exit("Use: $ python3 thyroid_extraction.py ./BMT ./GRAVES")
+	if len(sys.argv) != 2:
+		sys.exit("Use: $ python3 thyroid_extraction.py dataset_path/")
 
-	main(sys.argv[1], sys.argv[2])
+	main(sys.argv[1])
