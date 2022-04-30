@@ -102,6 +102,6 @@ def main(dataset_path, features_file):
     
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        sys.exit("Use: $ python3 tireoide.py dataset_path/ <pre_extracted_features_file>")
+        sys.exit("Use: $ python3 thyroid_model.py dataset_path/ <pre_extracted_features_file>")
 
     main(sys.argv[1], sys.argv[2])

@@ -299,6 +299,6 @@ def main(bmt, graves):
     
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		sys.exit("Use: $ python3 tireoide_extracao.py ./BMT ./GRAVES")
+		sys.exit("Use: $ python3 thyroid_extraction.py ./BMT ./GRAVES")
 
 	main(sys.argv[1], sys.argv[2])
