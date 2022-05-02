@@ -1,4 +1,4 @@
-<h1>Implementação do algoritmo k-NN para classificação</h1>
+<h1>Classificação de imagens de cintilografia de tireoide: BMT e doença de Graves</h1>
 
 Implementação do trabalho de classificação de imagens de cintilografia de tireoide, proposto na disciplina de Processamento de Imagens Biomédicas. Foi fornecido um arquivo zipado com imagens no formato DICOM (Digital Imaging and Communications in Medicine) anonimizadas de 16-bits, com 128 x 128 pixels de dimensão,  de 12 pacientes - sendo seis delas de pacientes com diagnóstico de bócio multinodular tóxico (BMT) e seis de pacientes com diagnóstico de doença de Graves.
 
